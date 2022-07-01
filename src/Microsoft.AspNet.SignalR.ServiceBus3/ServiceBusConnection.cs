@@ -43,7 +43,7 @@ namespace Microsoft.AspNet.SignalR.ServiceBus
             {
                 _namespaceManager = NamespaceManager.CreateFromConnectionString(_connectionString);
                 _factory = MessagingFactory.CreateFromConnectionString(_connectionString);
-
+                
                 if (configuration.RetryPolicy != null)
                 {
                     _factory.RetryPolicy = configuration.RetryPolicy;
@@ -103,7 +103,10 @@ namespace Microsoft.AspNet.SignalR.ServiceBus
 
                         _namespaceManager.CreateTopic(new TopicDescription(topicName) 
                         {  
-                            EnableExpress = true
+                            EnableExpress = true,
+                            EnableFilteringMessagesBeforePublishing = false,
+                            //EnablePartitioning = true,
+                            //EnableBatchedOperations = false
                         });
 
                         _trace.TraceInformation("Creation of a new topic {0} in the service bus completed successfully.", topicName);
@@ -170,10 +173,11 @@ namespace Microsoft.AspNet.SignalR.ServiceBus
                 // Create a receiver to get messages
                 string subscriptionEntityPath = SubscriptionClient.FormatSubscriptionPath(topicName, subscriptionName);
                 MessageReceiver receiver = _factory.CreateMessageReceiver(subscriptionEntityPath, ReceiveMode.ReceiveAndDelete);
-
+                
                 _trace.TraceInformation("Creation of a message receive for subscription entity path {0} in the service bus completed successfully.", subscriptionEntityPath);
 
-                connectionContext.SetSubscriptionContext(new SubscriptionContext(topicName, subscriptionName, receiver), topicIndex);
+                var subscriptionContext = new SubscriptionContext(topicName, subscriptionName, receiver);
+                connectionContext.SetSubscriptionContext(subscriptionContext, topicIndex);
 
                 var receiverContext = new ReceiverContext(topicIndex, receiver, connectionContext);
 
